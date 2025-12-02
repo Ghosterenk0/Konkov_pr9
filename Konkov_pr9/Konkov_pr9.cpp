@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <Windows.h>
 #include <conio.h>
 
@@ -6,13 +6,56 @@ void incCount() {
 	int count = 0;
 	while (true) {
 		std::cout << count << std::endl;
+		Sleep(3000);
 		count++;
 	}
 }
 
-void StartProcess(wchar_t app) {
+void StartAndFinishProcess(const wchar_t* nameProcess) {
+	STARTUPINFO si;
+	PROCESS_INFORMATION piApp;
 
+	ZeroMemory(&si, sizeof(STARTUPINFO));
+	si.cb = sizeof(STARTUPINFO);
+
+	wchar_t process[256];
+	wcscpy_s(process, nameProcess);
+
+	if (!CreateProcess(NULL, process, NULL, NULL, FALSE, 0, NULL, NULL, &si, &piApp)) {
+		std::cout << "Дочерний процесс не создан" << std::endl;
+		_getch();
+	}
+	std::cout << "Дочерний процесс создан" << std::endl;
+	while (true) {
+		char c;
+		std::cout << "Введите d чтобы завершить процесс: ";
+		std::cin >> c;
+		if (c == 'd') {
+			TerminateProcess(piApp.hProcess, 1);
+			std::cout << "Процесс завершен" << std::endl;
+			break;
+		}
+	}
+
+	CloseHandle(piApp.hThread);
+	CloseHandle(piApp.hProcess);
 }
+
+void StartThread(const wchar_t* nameProcess) {
+
+	wchar_t process[256];
+	wcscpy_s(process, nameProcess);
+
+	DWORD IDPotokSp;
+	HANDLE potocSp = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)StartAndFinishProcess, process, 0, &IDPotokSp);
+
+	DWORD IDPotoc;
+	HANDLE potokinc = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)incCount, NULL, 0, &IDPotoc);
+
+	WaitForSingleObject(potocSp, INFINITE);
+	WaitForSingleObject(potokinc, INFINITE);
+}
+
 
 int main()
 {
@@ -29,19 +72,20 @@ int main()
 	switch (c)
 	{
 	case '1':
-		app = L'word.exe';
+		StartThread(L"word.exe ");
 		break;
 	case '2':
-		app = L'excel.exe';
+		StartThread(L"excel.exe ");
 		break;
 	case '3':
-		app = L'mspaint.exe';
+		StartThread(L"mspaint.exe ");
 		break;
 	case '4':
-		app = L'notepad.exe';
+		StartThread(L"notepad.exe ");
 		break;
 	default:
 		std::cout << "Неверно выбранное действие" << std::endl;
 		break;
 	}
+	return 0;
 }
