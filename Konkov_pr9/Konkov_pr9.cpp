@@ -5,18 +5,17 @@
 
 struct ProcessInfo {
 public:
-	wchar_t name[256];
+	int name;
 	PROCESS_INFORMATION ProcessI;
 
 	ProcessInfo() {}
-	ProcessInfo(const wchar_t* d, PROCESS_INFORMATION proc) {
-		wcscpy(name, d);
+	ProcessInfo(int a, PROCESS_INFORMATION proc) {
+		name = a;
 		ProcessI = proc;
 	}
 };
 
 HANDLE threads[3];
-HANDLE hCounterThread = NULL;
 
 STARTUPINFO si;
 STARTUPINFO si2;
@@ -26,11 +25,12 @@ int size = 4;
 int count = 0;
 ProcessInfo* pi1 = new ProcessInfo[size];
 
-
+ProcessInfo info;
+PROCESS_INFORMATION pi;
 
 wchar_t appname[] = L"C:\\Users\\st310-05\\Desktop\\konkov_pr9\\main\\x64\\Debug\\dotch.exe ";
-wchar_t word[] = L"winword.exe";
-wchar_t excel[] = L"excel.exe";
+wchar_t word[] = L"C:\\Program Files\\Microsoft Office\\root\\Office16\\winword.exe";
+wchar_t excel[] = L"C:\\Program Files\\Microsoft Office\\root\\Office16\\excel.exe";
 wchar_t paint[] = L"mspaint.exe";
 wchar_t notepad[] = L"notepad.exe";
 
@@ -49,8 +49,12 @@ int Process() {
 	ZeroMemory(&si, sizeof(STARTUPINFO));
 	si.cb = sizeof(STARTUPINFO);
 	
-	wchar_t arg[256];
-	wsprintf(arg, L"%s %d", appname, (DWORD)(ULONG_PTR)hCounterThread);
+	HANDLE hCounterThread = threads[0];
+	
+	wchar_t arg[512];
+	wsprintf(arg, L"%s%d", appname, (size_t)hCounterThread);
+
+	SetHandleInformation(hCounterThread, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
 
 	if (!CreateProcess(NULL, arg, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &picons)) {
 		std::cout << "Ошибка" << std::endl;
@@ -65,18 +69,16 @@ int Process() {
 int StartApp(const wchar_t* nameProcess) {
 	ZeroMemory(&si2, sizeof(STARTUPINFO));
 	si2.cb = sizeof(STARTUPINFO);
-	PROCESS_INFORMATION pi;
+	
 
 	wchar_t process[256];
 	wcscpy_s(process, nameProcess);
 	Sleep(1000);
-	if (!CreateProcess(NULL, process, NULL, NULL, FALSE, NULL, NULL, NULL, &si2, &pi)) {
+	if (!CreateProcess(NULL, process, NULL, NULL, FALSE, NULL, NULL, NULL, &si2, &info.ProcessI)) {
 		std::cout << "Ошибка" << std::endl;
 		return 0;
 	}
 
-	ProcessInfo s;
-	ProcessInfo info = ProcessInfo(nameProcess, pi);
 
 	if (count >= 4) {
 		size *= 2;
@@ -95,19 +97,17 @@ int StartApp(const wchar_t* nameProcess) {
 		count++;
 	}
 
-	WaitForSingleObject(pi.hProcess, INFINITE);
+	WaitForSingleObject(info.ProcessI.hProcess, INFINITE);
 	return 0;
 }
 
 
-void Start(const wchar_t* nameProcess) {
+void Start(const wchar_t* nameProcess, ProcessInfo info) {
 
 	wchar_t process[256];
 	wcscpy_s(process, nameProcess);
-	if (threads[0] == NULL || threads[1] == NULL) {
+	if (threads[0] == NULL) {
 		threads[0] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)countInc, NULL, 0, NULL);
-		hCounterThread = threads[0];
-		Sleep(300);
 		threads[1] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Process, NULL, 0, NULL);
 	}
 	threads[2] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)StartApp, process, 0, NULL);
@@ -139,35 +139,38 @@ int main()
 		std::cin >> c;
 		switch (c) {
 		case '1':
-			Start(word);
+			info = ProcessInfo(1, pi);
+			Start(word, info);
 			break;
 		case '2':
-			Start(excel);
+			info = ProcessInfo(2, pi);
+			Start(excel, info);
 			break;
 		case '3':
-			Start(paint);
+			info = ProcessInfo(3, pi);
+			Start(paint, info);
 			break;
 		case '4':
-			Start(notepad);
+			info = ProcessInfo(4, pi);
+			Start(notepad, info);
 			break;
 		case '5':
-			/*TerminateProcess(pi1[count].hProcess, 0);
-			WaitForSingleObject(pi1[count].hProcess, 1000);
+			TerminateProcess(pi1[count].ProcessI.hProcess, 0);
+			WaitForSingleObject(pi1[count].ProcessI.hProcess, 1000);
 
-			CloseHandle(pi1[count].hProcess);
-			CloseHandle(pi1[count].hThread);
-			count--;*/
+			CloseHandle(pi1[count].ProcessI.hProcess);
+			CloseHandle(pi1[count].ProcessI.hThread);
+			count--;
 			break;
 		case '6':
 			for (int i = count; i >= 0; i--)
 			{
-				if (pi1[i].name == word) {
-					TerminateProcess(pi1[count].ProcessI.hProcess, 0);
-					WaitForSingleObject(pi1[count].ProcessI.hProcess, 1000);
+				if (pi1[i].name == 1) {
+					TerminateProcess(pi1[i].ProcessI.hProcess, 0);
+					WaitForSingleObject(pi1[i].ProcessI.hProcess, 1000);
 
-					CloseHandle(pi1[count].ProcessI.hProcess);
-					CloseHandle(pi1[count].ProcessI.hProcess);
-					pi1[count];
+					CloseHandle(pi1[i].ProcessI.hProcess);
+					CloseHandle(pi1[i].ProcessI.hProcess);
 					count--;
 					break;
 				}
@@ -176,13 +179,12 @@ int main()
 		case '7':
 			for (int i = count; i >= 0; i--)
 			{
-				if (pi1[i].name == excel) {
-					TerminateProcess(pi1[count].ProcessI.hProcess, 0);
-					WaitForSingleObject(pi1[count].ProcessI.hProcess, 1000);
+				if (pi1[i].name == 2) {
+					TerminateProcess(pi1[i].ProcessI.hProcess, 0);
+					WaitForSingleObject(pi1[i].ProcessI.hProcess, 1000);
 
-					CloseHandle(pi1[count].ProcessI.hProcess);
-					CloseHandle(pi1[count].ProcessI.hProcess);
-					pi1[count];
+					CloseHandle(pi1[i].ProcessI.hProcess);
+					CloseHandle(pi1[i].ProcessI.hProcess);
 					count--;
 					break;
 				}
@@ -191,28 +193,27 @@ int main()
 		case '8':
 			for (int i = count; i >= 0; i--)
 			{
-				if (pi1[i].name == paint) {
-					TerminateProcess(pi1[count].ProcessI.hProcess, 0);
-					WaitForSingleObject(pi1[count].ProcessI.hProcess, 1000);
+				if (pi1[i].name == 3) {
+					TerminateProcess(pi1[i].ProcessI.hProcess, 0);
+					WaitForSingleObject(pi1[i].ProcessI.hProcess, 1000);
 
-					CloseHandle(pi1[count].ProcessI.hProcess);
-					CloseHandle(pi1[count].ProcessI.hProcess);
-					pi1[count];
+					CloseHandle(pi1[i].ProcessI.hProcess);
+					CloseHandle(pi1[i].ProcessI.hProcess);
 					count--;
 					break;
 				}
 			}
 			break;
 		case '9':
-			for (int i = count; i >= 0; i--)
+			for (int i = count - 1; i >= 0; i--)
 			{
-				if (pi1[i].name == notepad) {
-					TerminateProcess(pi1[count].ProcessI.hProcess, 0);
-					WaitForSingleObject(pi1[count].ProcessI.hProcess, 1000);
 
-					CloseHandle(pi1[count].ProcessI.hProcess);
-					CloseHandle(pi1[count].ProcessI.hProcess);
-					pi1[count];
+				if (pi1[i].name == 4) {
+					TerminateProcess(pi1[i].ProcessI.hProcess, 0);
+					WaitForSingleObject(pi1[i].ProcessI.hProcess, 1000);
+
+					CloseHandle(pi1[i].ProcessI.hProcess);
+					CloseHandle(pi1[i].ProcessI.hProcess);
 					count--;
 					break;
 				}
@@ -222,13 +223,16 @@ int main()
 		case 'в':
 		case 'D':
 		case 'В':
+			TerminateProcess(picons.hProcess, 0);
+			WaitForSingleObject(picons.hProcess, 1000);
+			CloseHandle(picons.hProcess);
+			CloseHandle(picons.hThread);
+
 			TerminateThread(threads[0], 0);
 			WaitForSingleObject(threads[0], 1000);
 			CloseHandle(threads[0]);
 			threads[0] = NULL;
 
-			TerminateProcess(picons.hProcess, 0);
-			WaitForSingleObject(picons.hProcess, 1000);
 			TerminateThread(threads[1], 0);
 			WaitForSingleObject(threads[1], 1000);
 			CloseHandle(threads[1]);
@@ -245,8 +249,6 @@ int main()
 			CloseHandle(threads[2]);
 			threads[2] = NULL;
 
-			CloseHandle(picons.hProcess);
-			CloseHandle(picons.hThread);
 
 			for (int i = 0; i < count; i++)
 			{
