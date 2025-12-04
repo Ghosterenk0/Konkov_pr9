@@ -6,19 +6,23 @@ HANDLE threads[3];
 HANDLE hCounterThread = NULL;
 
 STARTUPINFO si;
-PROCESS_INFORMATION pi;
+PROCESS_INFORMATION picons;
 
 STARTUPINFO si2;
-PROCESS_INFORMATION pi2;
+//PROCESS_INFORMATION pi2;
+
+int size = 4;
+int count = 0;
+PROCESS_INFORMATION* pi1 = new PROCESS_INFORMATION[size];
 
 
 
-wchar_t appname[] = L"C:\\файлы\\c++\\Konkov_pr9\\ConsoleApplication1\\x64\\Debug\\dotch.exe ";
+wchar_t appname[] = L"C:\\Users\\st310-05\\Desktop\\konkov_pr9\\main\\x64\\Debug\\dotch.exe ";
 wchar_t word[] = L"winword.exe";
-wchar_t excel[] = L"excel.exe ";
-wchar_t paint[] = L"mspaint.exe ";
-wchar_t notepad[] = L"notepad.exe ";
- 
+wchar_t excel[] = L"excel.exe";
+wchar_t paint[] = L"mspaint.exe";
+wchar_t notepad[] = L"notepad.exe";
+
 
 void countInc() {
 	int count = 0;
@@ -33,18 +37,17 @@ void countInc() {
 int Process() {
 	ZeroMemory(&si, sizeof(STARTUPINFO));
 	si.cb = sizeof(STARTUPINFO);
-
-
+	
 
 	wchar_t arg[256];
 	wsprintf(arg, L"%s %d", appname, (DWORD)(ULONG_PTR)hCounterThread);
-	
-	if (!CreateProcess(NULL, arg, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi)) {
+
+	if (!CreateProcess(NULL, arg, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &picons)) {
 		std::cout << "Ошибка" << std::endl;
 		return 0;
 	}
 
-	WaitForSingleObject(pi.hProcess, INFINITE);
+	WaitForSingleObject(picons.hProcess, INFINITE);
 
 	return 0;
 }
@@ -52,13 +55,29 @@ int Process() {
 int StartApp(const wchar_t* nameProcess) {
 	ZeroMemory(&si2, sizeof(STARTUPINFO));
 	si2.cb = sizeof(STARTUPINFO);
+	PROCESS_INFORMATION pi;
 
 	wchar_t process[256];
 	wcscpy_s(process, nameProcess);
 	Sleep(1000);
-	if (!CreateProcess(NULL, process, NULL, NULL, FALSE, NULL, NULL, NULL, &si2, &pi2)) {
+	if (!CreateProcess(NULL, process, NULL, NULL, FALSE, NULL, NULL, NULL, &si2, &pi)) {
 		std::cout << "Ошибка" << std::endl;
 		return 0;
+	}
+	if (count >= 4) {
+		size *= 2;
+		PROCESS_INFORMATION* temp = pi1;
+		pi1 = new PROCESS_INFORMATION[size];
+		for (int i = 0; i < count; i++)
+		{
+			pi1[i] = temp[i];
+		}
+		delete[] temp;
+		pi1[count] = pi;
+	}
+	else {
+		pi1[count] = pi;
+		count++;
 	}
 
 	WaitForSingleObject(pi.hProcess, INFINITE);
@@ -86,7 +105,8 @@ void menu() {
 	std::cout << "2. Excel" << std::endl;
 	std::cout << "3. Paint" << std::endl;
 	std::cout << "4. Notepad" << std::endl;
-	std::cout << "5. Введите d для завершения программы" << std::endl;
+	std::cout << "5. Закрыть процесс" << std::endl;
+	std::cout << "Введите d для завершения программы" << std::endl;
 }
 
 
@@ -111,6 +131,14 @@ int main()
 		case '4':
 			Start(notepad);
 			break;
+		case '5':
+			TerminateProcess(pi1[count].hProcess, 0);
+			WaitForSingleObject(pi1[count].hProcess, 1000);
+
+			CloseHandle(pi1[count].hProcess);
+			CloseHandle(pi1[count].hThread);
+			count--;
+			break;
 		case 'd':
 		case 'в':
 		case 'D':
@@ -120,28 +148,35 @@ int main()
 			CloseHandle(threads[0]);
 			threads[0] = NULL;
 
-			TerminateProcess(pi.hProcess, 0);
-			WaitForSingleObject(pi.hProcess, 1000);
+			TerminateProcess(picons.hProcess, 0);
+			WaitForSingleObject(picons.hProcess, 1000);
 			TerminateThread(threads[1], 0);
 			WaitForSingleObject(threads[1], 1000);
 			CloseHandle(threads[1]);
 			threads[1] = NULL;
 
-			TerminateProcess(pi2.hProcess, 0);
-			WaitForSingleObject(pi2.hProcess, 1000);
+			for (int i = 0; i < count; i++)
+			{
+				TerminateProcess(pi1[i].hProcess, 0);
+				WaitForSingleObject(pi1[i].hProcess, 1000);
+			}
+			
 			TerminateThread(threads[2], 0);
 			WaitForSingleObject(threads[2], 1000);
 			CloseHandle(threads[2]);
 			threads[2] = NULL;
 
-			CloseHandle(pi.hProcess);
-			CloseHandle(pi.hThread);
+			CloseHandle(picons.hProcess);
+			CloseHandle(picons.hThread);
 
-			CloseHandle(pi2.hProcess);
-			CloseHandle(pi2.hThread);
+			for (int i = 0; i < count; i++)
+			{
+				CloseHandle(pi1[i].hProcess);
+				CloseHandle(pi1[i].hThread);
+			}
 			return 0;
 		}
 	}
-	
-	
+
+
 }
