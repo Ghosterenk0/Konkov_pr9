@@ -34,6 +34,8 @@ int Process() {
 	ZeroMemory(&si, sizeof(STARTUPINFO));
 	si.cb = sizeof(STARTUPINFO);
 
+
+
 	wchar_t arg[256];
 	wsprintf(arg, L"%s %d", appname, (DWORD)(ULONG_PTR)hCounterThread);
 	
@@ -70,6 +72,7 @@ void Start(const wchar_t* nameProcess) {
 	wcscpy_s(process, nameProcess);
 	if (threads[0] == NULL || threads[1] == NULL) {
 		threads[0] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)countInc, NULL, 0, NULL);
+		hCounterThread = threads[0];
 		Sleep(300);
 		threads[1] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Process, NULL, 0, NULL);
 	}
