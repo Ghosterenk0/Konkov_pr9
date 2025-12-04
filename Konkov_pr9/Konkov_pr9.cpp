@@ -3,6 +3,7 @@
 #include <conio.h>
 
 HANDLE threads[3];
+HANDLE hCounterThread = NULL;
 
 STARTUPINFO si;
 PROCESS_INFORMATION pi;
@@ -32,7 +33,11 @@ void countInc() {
 int Process() {
 	ZeroMemory(&si, sizeof(STARTUPINFO));
 	si.cb = sizeof(STARTUPINFO);
-	if (!CreateProcess(appname, NULL, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi)) {
+
+	wchar_t arg[256];
+	wsprintf(arg, L"%s %d", appname, (DWORD)(ULONG_PTR)hCounterThread);
+	
+	if (!CreateProcess(NULL, arg, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi)) {
 		std::cout << "Ошибка" << std::endl;
 		return 0;
 	}
